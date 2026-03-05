@@ -1,0 +1,7 @@
+# OpenCode plugin config
+.opencode/mqtt-config.json
+
+# Listener config
+listener/notify-config.json
+
+.qoder/
