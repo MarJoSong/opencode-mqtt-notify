@@ -1,48 +1,93 @@
-# OpenCode MQTT 通知插件
+# opencode-mqtt-notify
 
-一个 OpenCode 插件，用于在特定事件发生时通过 MQTT 发送通知，并提供跨平台的消息监听器以发送桌面通知。
+基于 MQTT 的 OpenCode 通知插件 - 当事件发生时通过 MQTT 发送通知。
 
-## 功能
+## 快速开始
 
-- 通过 MQTT 发送以下事件通知：
-  - 权限请求 (`permission.asked`)
-  - 会话错误 (`session.error`)
-  - 会话结束 (`session.idle`)
-  - 问答工具调用 (`tui.prompt.append`)
-- 通过可配置命令实现跨平台桌面通知
-- 支持本地和远程 MQTT broker
+1. **安装 MQTT broker**（或使用远程服务）：
+```bash
+docker run -d -p 1883:1883 eclipse-mosquitto
+```
+
+2. **复制插件**到 OpenCode：
+```bash
+mkdir -p ~/.config/opencode/plugins/
+cp src/mqtt-notify.js ~/.config/opencode/plugins/
+```
+
+3. **配置** MQTT 设置：
+```bash
+mkdir -p ~/.config/opencode
+echo '{"host": "localhost", "port": 1883}' > ~/.config/opencode/mqtt-config.json
+```
+
+4. **运行监听器**：
+```bash
+./listener/mqtt-listener.sh &
+```
+
+完成。当以下情况发生时你会收到通知：
+- OpenCode 需要权限运行某些操作
+- 你的会话结束
+- 发生错误
+- 问答工具被调用
+
+## 工作原理
+
+当 OpenCode 事件发生时，插件发送 MQTT 消息。监听器接收这些消息并显示桌面通知。
+
+```
+[OpenCode] → MQTT Broker → [监听器] → 桌面通知
+```
 
 ## 环境要求
 
 - [OpenCode](https://opencode.ai)
-- [mosquitto-clients](https://mosquitto.org) (用于发布/订阅 MQTT)
-- macOS 通知：`osascript`（内置）或 `terminal-notifier`
-- Linux 通知：`notify-send`、`dunstify`、`kdialog` 或 `zenity`
+- mosquitto-clients（macOS 上用 `brew install mosquitto`）
+- 通知工具：macOS 用 `osascript`，Linux 用 `notify-send`
 
-## 安装
+## 配置
 
-### 1. 安装插件
+### 插件配置
 
-将插件复制到 OpenCode 插件目录：
+创建 `~/.config/opencode/mqtt-config.json`：
+
+```json
+{
+  "host": "localhost",
+  "port": 1883
+}
+```
+
+**选项：**
+- `host` - MQTT broker 主机名（默认：localhost）
+- `port` - MQTT broker 端口（默认：1883）
+
+### 监听器配置（可选）
+
+监听器发送桌面通知。复制示例配置：
 ```bash
-cp -r src/mqtt-notify.js ~/.config/opencode/plugins/
-# 或项目级别安装
-cp -r src/mqtt-notify.js .opencode/plugins/
+cp listener/notify-config.example.json listener/notify-config.json
 ```
 
-### 2. 安装 MQTT Broker（可选）
+编辑 `listener/notify-config.json` 自定义通知命令：
 
-**本地部署（推荐）：**
-```bash
-docker run -d --name opencode-mosquitto -p 1883:1883 eclipse-mosquitto
+```json
+{
+  "command": "osascript -e 'display notification \"$MESSAGE\" with title \"$TITLE\"'"
+}
 ```
 
-**或使用远程 broker：**
-```
-lic.mindopt.alibaba.net:1883
-```
+占位符：`$TITLE`、`$MESSAGE`
 
-### 3. 安装 mosquitto-clients
+**各平台示例：**
+| 平台 | 命令 |
+|------|------|
+| macOS | `osascript -e 'display notification "$MESSAGE" with title "$TITLE"'` |
+| Linux | `notify-send '$TITLE' '$MESSAGE'` |
+| Linux (dunstify) | `dunstify '$TITLE' '$MESSAGE'` |
+
+## 各平台安装
 
 **macOS：**
 ```bash
@@ -51,121 +96,33 @@ brew install mosquitto
 
 **Linux (Ubuntu/Debian)：**
 ```bash
-sudo apt install mosquitto-clients
+sudo apt install mosquitto-clients libnotify-bin
 ```
 
 **Linux (Arch)：**
 ```bash
-sudo pacman -S mosquitto
+sudo pacman -S mosquitto libnotify
 ```
 
-### 4. 配置插件
+## 故障排除
 
-在项目目录创建 `.opencode/mqtt-config.json`：
-```json
-{
-  "host": "localhost",
-  "port": 1883
-}
-```
+**收不到通知？**
 
-### 5. 配置监听器（可选）
-
-复制并编辑监听器配置：
+1. 检查 MQTT broker 是否运行：
 ```bash
-cp listener/notify-config.example.json listener/notify-config.json
+mosquitto_sub -t 'opencode/#' -v
 ```
 
-编辑 `listener/notify-config.json` 自定义通知命令：
-```json
-{
-  "command": "osascript -e 'display notification \"$MESSAGE\" with title \"$TITLE\"'"
-}
-```
-
-### 6. 启动监听器
-
-**方案 A：直接运行：**
+2. 检查监听器是否运行：
 ```bash
-./listener/mqtt-listener.sh
+ps aux | grep mqtt-listener
 ```
 
-**方案 B：作为 macOS 服务运行（LaunchAgent）：**
+3. 对于 Linux，安装通知工具：
 ```bash
-cp launch/com.opencode.mqtt-listener.plist ~/Library/LaunchAgents/
-# 编辑 plist 设置正确路径
-launchctl load ~/Library/LaunchAgents/com.opencode.mqtt-listener.plist
+sudo apt install libnotify-bin  # Ubuntu/Debian
 ```
-
-**方案 C：交互式安装：**
-```bash
-./setup.sh
-```
-
-## 配置
-
-### 插件 MQTT 设置
-
-创建 `.opencode/mqtt-config.json`：
-
-| 选项 | 描述 | 默认值 |
-|------|------|--------|
-| `host` | MQTT broker 主机名 | `localhost` |
-| `port` | MQTT broker 端口 | `1883` |
-
-### 监听器通知命令
-
-编辑 `listener/notify-config.json`：
-
-通知命令支持两个占位符：
-- `$TITLE` - 通知标题
-- `$MESSAGE` - 通知内容
-
-**各平台示例：**
-
-| 平台 | 命令 |
-|------|------|
-| macOS (osascript) | `osascript -e 'display notification "$MESSAGE" with title "$TITLE"'` |
-| macOS (terminal-notifier) | `terminal-notifier -title '$TITLE' -message '$MESSAGE'` |
-| Linux (notify-send) | `notify-send '$TITLE' '$MESSAGE'` |
-| Linux (dunstify) | `dunstify '$TITLE' '$MESSAGE'` |
-| Linux (KDE) | `kdialog --passivepopup '$MESSAGE' '$TITLE'` |
-| Linux (GNOME) | `zenity --notification --text='$TITLE: $MESSAGE'` |
-
-## 项目结构
-
-```
-.
-├── src/
-│   └── mqtt-notify.js        # OpenCode 插件
-├── listener/
-│   ├── mqtt-listener.sh      # MQTT 监听器与通知发送器
-│   ├── notify-config.json   # 监听器配置（用户定义）
-│   └── notify-config.example.json
-├── launch/
-│   └── com.opencode.mqtt-listener.plist  # macOS LaunchAgent
-├── setup.sh                  # 交互式安装脚本
-├── registry.json             # OCX 注册表元数据
-├── LICENSE                   # MIT 许可证
-├── README.md
-├── README_zh_CN.md
-├── README_zh_TW.md
-└── README_ja.md
-```
-
-## 支持的事件
-
-| 事件 | 描述 |
-|------|------|
-| `permission.asked` | 当 OpenCode 需要权限运行工具时 |
-| `session.error` | 当会话中发生错误时 |
-| `session.idle` | 当会话结束时 |
-| `tui.prompt.append` | 当问答工具被调用时 |
 
 ## 许可证
 
-MIT 许可证 - 见 [LICENSE](LICENSE)
-
-## 作者
-
-[songyuhua](https://github.com/songyuhua)
+MIT
