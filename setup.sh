@@ -20,7 +20,7 @@ if [ "$choice" = "1" ]; then
     fi
     
     echo "Starting Mosquitto container..."
-    docker run -d --name opencode-mosquitto -p 1883:1883 eclipse-mosquitto
+    docker run -d --name opencode-mqtt -p 0.0.0.0:1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
     
     export MQTT_HOST=localhost
     export MQTT_PORT=1883
@@ -39,4 +39,4 @@ echo ""
 
 osascript -e 'display notification "OpenCode notification service started" with title "OpenCode"'
 
-exec "${SCRIPT_DIR}/listener/mqtt-listener.sh"
+exec "${SCRIPT_DIR}/mqtt-listener.sh"

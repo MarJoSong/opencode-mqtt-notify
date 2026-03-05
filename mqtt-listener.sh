@@ -1,20 +1,42 @@
 #!/bin/bash
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+#
+# MQTT Listener for OpenCode Notifications
+#
+# Usage:
+#   MQTT_HOST=localhost MQTT_PORT=1883 ./mqtt-listener.sh
+#
+# Environment Variables:
+#   MQTT_HOST         - MQTT broker hostname (default: localhost)
+#   MQTT_PORT         - MQTT broker port (default: 1883)
+#   NOTIFY_COMMAND    - Notification command (optional)
+#
+# Notification Command Examples:
+#   Replace $TITLE and $MESSAGE placeholders in your command
+#
+#   # macOS (osascript - built-in)
+#   export NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
+#
+#   # macOS (terminal-notifier)
+#   export NOTIFY_COMMAND="terminal-notifier -title '\$TITLE' -message '\$MESSAGE'"
+#
+#   # Linux (notify-send)
+#   export NOTIFY_COMMAND="notify-send '\$TITLE' '\$MESSAGE'"
+#
+#   # Linux (dunstify)
+#   export NOTIFY_COMMAND="dunstify '\$TITLE' '\$MESSAGE'"
+#
+#   # Linux (KDE)
+#   export NOTIFY_COMMAND="kdialog --passivepopup '\$MESSAGE' '\$TITLE'"
+#
+#   # Linux (GNOME zenity)
+#   export NOTIFY_COMMAND="zenity --notification --text='\$TITLE: \$MESSAGE'"
+#
 
 MQTT_HOST="${MQTT_HOST:-localhost}"
 MQTT_PORT="${MQTT_PORT:-1883}"
 MQTT_TOPIC="opencode/#"
 
 NOTIFY_COMMAND="${NOTIFY_COMMAND:-osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'}"
-
-if [ -z "$NOTIFY_COMMAND" ] && [ -f "${SCRIPT_DIR}/notify-config.json" ] && command -v jq &> /dev/null; then
-    NOTIFY_COMMAND=$(jq -r '.command // empty' "${SCRIPT_DIR}/notify-config.json" 2>/dev/null)
-fi
-
-if [ -z "$NOTIFY_COMMAND" ]; then
-    NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
-fi
 
 send_notification() {
     local title="$1"

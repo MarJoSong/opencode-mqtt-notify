@@ -9,23 +9,15 @@ MQTT-based notifications for OpenCode - send notifications via MQTT broker when 
 docker run -d --name opencode-mqtt -p 0.0.0.0:1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
 ```
 
-> **Note:** The `-p 0.0.0.0:1883:1883` flag binds the broker to all network interfaces, allowing remote connections. Use `-p 1883:1883` for local-only access.
-
 2. **Copy plugin** to OpenCode:
 ```bash
 mkdir -p ~/.config/opencode/plugins/
 cp src/mqtt-notify.js ~/.config/opencode/plugins/
 ```
 
-3. **Configure** MQTT settings:
+3. **Run listener**:
 ```bash
-mkdir -p ~/.config/opencode
-echo '{"host": "localhost", "port": 1883}' > ~/.config/opencode/mqtt-config.json
-```
-
-4. **Run listener**:
-```bash
-./listener/mqtt-listener.sh &
+./mqtt-listener.sh &
 ```
 
 Done. You'll get notified when:
@@ -34,20 +26,6 @@ Done. You'll get notified when:
 - An error happens
 - The question tool pops up
 
-## What It Does
-
-This plugin sends MQTT messages when OpenCode events occur. A listener script receives these messages and displays desktop notifications.
-
-```
-[OpenCode] → MQTT Broker → [Listener] → Desktop Notification
-```
-
-## Requirements
-
-- [OpenCode](https://opencode.ai)
-- mosquitto-clients (`brew install mosquitto` on macOS)
-- For notifications: `osascript` (macOS), `notify-send` (Linux)
-
 ## Configuration
 
 ### Environment Variables
@@ -55,42 +33,36 @@ This plugin sends MQTT messages when OpenCode events occur. A listener script re
 Both plugin and listener use environment variables:
 
 ```bash
-# MQTT broker
 export MQTT_HOST=localhost
 export MQTT_PORT=1883
-
-# Notification command (listener only)
-export NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
 ```
 
-**Options:**
-- `MQTT_HOST` - MQTT broker hostname (default: localhost)
-- `MQTT_PORT` - MQTT broker port (default: 1883)
-- `NOTIFY_COMMAND` - Notification command with `$TITLE` and `$MESSAGE` placeholders
+### Notification Command
 
-### Listener Config (Optional)
+Override the notification command:
 
-The listener sends desktop notifications. Copy the example config:
 ```bash
-cp listener/notify-config.example.json listener/notify-config.json
+# macOS (osascript - built-in)
+export NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
+
+# macOS (terminal-notifier)
+export NOTIFY_COMMAND="terminal-notifier -title '\$TITLE' -message '\$MESSAGE'"
+
+# Linux (notify-send)
+export NOTIFY_COMMAND="notify-send '\$TITLE' '\$MESSAGE'"
+
+# Linux (dunstify)
+export NOTIFY_COMMAND="dunstify '\$TITLE' '\$MESSAGE'"
+
+# Linux (KDE)
+export NOTIFY_COMMAND="kdialog --passivepopup '\$MESSAGE' '\$TITLE'"
 ```
 
-Edit `listener/notify-config.json` to customize notification command:
+## Requirements
 
-```json
-{
-  "command": "osascript -e 'display notification \"$MESSAGE\" with title \"$TITLE\"'"
-}
-```
-
-Placeholders: `$TITLE`, `$MESSAGE`
-
-**Platform examples:**
-| Platform | Command |
-|----------|---------|
-| macOS | `osascript -e 'display notification "$MESSAGE" with title "$TITLE"'` |
-| Linux | `notify-send '$TITLE' '$MESSAGE'` |
-| Linux (dunstify) | `dunstify '$TITLE' '$MESSAGE'` |
+- [OpenCode](https://opencode.ai)
+- mosquitto-clients (`brew install mosquitto` on macOS)
+- For notifications: `osascript` (macOS), `notify-send` (Linux)
 
 ## Setup by Platform
 
