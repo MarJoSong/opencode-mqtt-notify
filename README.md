@@ -4,10 +4,12 @@ MQTT-based notifications for OpenCode - send notifications via MQTT broker when 
 
 ## Quick Start
 
-1. **Install MQTT broker** (or use remote):
+1. **Install MQTT broker**:
 ```bash
-docker run -d -p 1883:1883 eclipse-mosquitto
+docker run -d --name opencode-mqtt -p 0.0.0.0:1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
 ```
+
+> **Note:** The `-p 0.0.0.0:1883:1883` flag binds the broker to all network interfaces, allowing remote connections. Use `-p 1883:1883` for local-only access.
 
 2. **Copy plugin** to OpenCode:
 ```bash
