@@ -5,15 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MQTT_HOST="${MQTT_HOST:-localhost}"
 MQTT_PORT="${MQTT_PORT:-1883}"
 MQTT_TOPIC="opencode/#"
-CONFIG_FILE="${SCRIPT_DIR}/notify-config.json"
 
-NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
+NOTIFY_COMMAND="${NOTIFY_COMMAND:-osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'}"
 
-if [ -f "$CONFIG_FILE" ] && command -v jq &> /dev/null; then
-    COMMAND=$(jq -r '.command // empty' "$CONFIG_FILE" 2>/dev/null)
-    if [ -n "$COMMAND" ]; then
-        NOTIFY_COMMAND="$COMMAND"
-    fi
+if [ -z "$NOTIFY_COMMAND" ] && [ -f "${SCRIPT_DIR}/notify-config.json" ] && command -v jq &> /dev/null; then
+    NOTIFY_COMMAND=$(jq -r '.command // empty' "${SCRIPT_DIR}/notify-config.json" 2>/dev/null)
+fi
+
+if [ -z "$NOTIFY_COMMAND" ]; then
+    NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
 fi
 
 send_notification() {

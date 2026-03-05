@@ -50,20 +50,23 @@ This plugin sends MQTT messages when OpenCode events occur. A listener script re
 
 ## Configuration
 
-### Plugin Config
+### Environment Variables
 
-Create `~/.config/opencode/mqtt-config.json`:
+Both plugin and listener use environment variables:
 
-```json
-{
-  "host": "localhost",
-  "port": 1883
-}
+```bash
+# MQTT broker
+export MQTT_HOST=localhost
+export MQTT_PORT=1883
+
+# Notification command (listener only)
+export NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
 ```
 
 **Options:**
-- `host` - MQTT broker hostname (default: localhost)
-- `port` - MQTT broker port (default: 1883)
+- `MQTT_HOST` - MQTT broker hostname (default: localhost)
+- `MQTT_PORT` - MQTT broker port (default: 1883)
+- `NOTIFY_COMMAND` - Notification command with `$TITLE` and `$MESSAGE` placeholders
 
 ### Listener Config (Optional)
 
