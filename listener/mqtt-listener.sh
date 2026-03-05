@@ -9,8 +9,8 @@ CONFIG_FILE="${SCRIPT_DIR}/notify-config.json"
 
 NOTIFY_COMMAND="osascript -e 'display notification \"\$MESSAGE\" with title \"\$TITLE\"'"
 
-if [ -f "$CONFIG_FILE" ]; then
-    COMMAND=$(grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' "$CONFIG_FILE" | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+if [ -f "$CONFIG_FILE" ] && command -v jq &> /dev/null; then
+    COMMAND=$(jq -r '.command // empty' "$CONFIG_FILE" 2>/dev/null)
     if [ -n "$COMMAND" ]; then
         NOTIFY_COMMAND="$COMMAND"
     fi
