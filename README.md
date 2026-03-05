@@ -9,8 +9,10 @@ MQTT-based notifications for OpenCode - send notifications via MQTT broker when 
 docker run -d --name opencode-mqtt -p 0.0.0.0:1883:1883 eclipse-mosquitto mosquitto -c /mosquitto-no-auth.conf
 ```
 
-2. **Copy plugin** to OpenCode:
+2. **Clone and copy plugin**:
 ```bash
+git clone git@github.com:MarJoSong/opencode-mqtt-notify.git
+cd opencode-mqtt-notify
 mkdir -p ~/.config/opencode/plugins/
 cp src/mqtt-notify.js ~/.config/opencode/plugins/
 ```
